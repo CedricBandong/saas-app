@@ -22,50 +22,58 @@ export const getAllCompanions = async ({
   limit = 10,
   page = 1,
   subject,
+  duration,
   topic,
 }: GetAllCompanions) => {
   const supabase = createSupabaseClient();
-
   const { userId } = await auth();
 
   let query = supabase.from("companions").select();
 
-  if (subject && topic) {
-    query = query
-      .ilike("subject", `%${subject}%`)
-      .or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`);
-  } else if (subject) {
-    query = query.ilike("subject", `%${subject}%`);
-  } else if (topic) {
-    query = query.or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`);
+  if (subject) {
+    const s = Array.isArray(subject) ? subject[0] : subject;
+    query = query.ilike("subject", `%${s}%`);
+  }
+
+  if (topic) {
+    const t = Array.isArray(topic) ? topic[0] : topic;
+    query = query.or(`topic.ilike.%${t}%,name.ilike.%${t}%`);
+  }
+
+  if (duration) {
+    const d = Array.isArray(duration) ? duration[0] : duration;
+    if (d === "lt10" || d === "under10") {
+      query = query.lt("duration", 10);
+    } else {
+      const durNum = parseInt(d, 10);
+      if (!Number.isNaN(durNum)) {
+        query = query.eq("duration", durNum);
+      }
+    }
   }
 
   query = query.range((page - 1) * limit, page * limit - 1);
 
   const { data: companions, error } = await query;
+  if (error) throw new Error(error.message);
+  if (!companions || companions.length === 0) return [];
 
-  if (error) {
-    throw new Error(error.message);
+  const companionIds = companions.map(({ id }) => id);
+  let bookmarks: any[] = [];
+  if (companionIds.length > 0) {
+    const { data: bmarks } = await supabase
+      .from("bookmarks")
+      .select()
+      .eq("user_id", userId)
+      .in("companion_id", companionIds);
+    bookmarks = bmarks || [];
   }
 
-  // Get an array of companion IDs
-  const companionIds = companions.map(({ id }) => id);
-
-  // Get the bookmarks where user_id is the current user and companion_id is in the array of companion IDs
-  const { data: bookmarks } = await supabase
-    .from("bookmarks")
-    .select()
-    .eq("user_id", userId)
-    .in("companion_id", companionIds); // Notice the in() function used to filter the bookmarks by array
-
-  const marks = new Set(bookmarks?.map(({ companion_id }) => companion_id));
-
-  // Add a bookmarked property to each companion
+  const marks = new Set(bookmarks.map((bookmark) => bookmark.companion_id));
   companions.forEach((companion) => {
-    companion.bookmarked = marks.has(companion.id);
+    (companion as any).bookmarked = marks.has((companion as any).id);
   });
 
-  // Return the companions as before, but with the bookmarked property added
   return companions;
 };
 
@@ -211,3 +219,4 @@ export const getBookmarkedCompanions = async (userId: string) => {
   // We don't need the bookmarks data, so we return only the companions
   return data.map(({ companions }) => companions);
 };
+

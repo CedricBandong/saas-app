@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "./ui/select";
-import { subjects } from "@/constants";
+import { subjects, durations } from "@/constants";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { formUrlQuery, removeKeysFromUrlQuery } from "@jsmastery/utils";
@@ -53,4 +53,46 @@ const SubjectFilter = () => {
     );
 };
 
+const DurationFilter = () => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const query = searchParams.get("duration") || "";
+
+    const [duration, setDuration] = useState(query);
+
+    useEffect(() => {
+        let newUrl = "";
+        if (duration === "all") {
+            newUrl = removeKeysFromUrlQuery({
+                params: searchParams.toString(),
+                keysToRemove: ["duration"],
+            });
+        } else {
+            newUrl = formUrlQuery({
+                params: searchParams.toString(),
+                key: "duration",
+                value: duration,
+            });
+        }
+        router.push(newUrl, { scroll: false });
+    }, [duration]);
+
+    return (
+        <Select onValueChange={setDuration} value={duration}>
+            <SelectTrigger className="input capitalize">
+                <SelectValue placeholder="Duration" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All durations</SelectItem>
+                {durations.map((duration) => (
+                    <SelectItem key={duration} value={duration} className="capitalize">
+                        {duration} minutes
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+};
+
 export default SubjectFilter;
+export { DurationFilter };

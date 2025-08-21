@@ -2,14 +2,15 @@ import {getAllCompanions} from "@/lib/actions/companion.actions";
 import CompanionCard from "@/components/CompanionCard";
 import {getSubjectColor} from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
-import SubjectFilter from "@/components/SubjectFilter";
+import SubjectFilter, { DurationFilter } from "@/components/SubjectFilter";
 
 const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
     const filters = await searchParams;
     const subject = filters.subject ? filters.subject : '';
     const topic = filters.topic ? filters.topic : '';
+    const duration = filters.duration ? filters.duration : '';
 
-    const companions = await getAllCompanions({ subject, topic });
+    const companions = await getAllCompanions({ subject, topic, duration });
 
     return (
         <main>
@@ -18,6 +19,7 @@ const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
                 <div className="flex gap-4">
                     <SearchInput />
                     <SubjectFilter />
+                    <DurationFilter />
                 </div>
             </section>
             <section className="companions-grid">

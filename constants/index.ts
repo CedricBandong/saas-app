@@ -7,6 +7,15 @@ export const subjects = [
   "economics",
 ];
 
+export const durations = [
+  "5",
+  "10",
+  "15",
+  "30",
+  "45",
+  "60",
+];
+
 export const subjectsColors = {
   science: "#E5D0FF",
   maths: "#FFDA6E",
